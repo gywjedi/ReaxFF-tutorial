@@ -1,0 +1,52 @@
+units           real
+
+## Boundary condition
+dimension       3
+boundary        p p p
+
+# Create geometry from a structure file
+atom_style      charge
+read_data	data.now
+replicate	2 2 2
+
+# Apply ReaxFF potentials
+pair_style      reax/c lmp_control
+pair_coeff      * * ffield_20210405  C H F
+
+# Boost  neibors (default = 2000)
+neighbor        2 bin
+neigh_modify    every 10 delay 0 check no
+
+compute                 reax all pair reax/c
+variable eb             equal c_reax[1]
+variable ea             equal c_reax[2]
+variable elp            equal c_reax[3]
+variable emol           equal c_reax[4]
+variable ev             equal c_reax[5]
+variable epen           equal c_reax[6]
+variable ecoa           equal c_reax[7]
+variable ehb            equal c_reax[8]
+variable et             equal c_reax[9]
+variable eco            equal c_reax[10]
+variable ew             equal c_reax[11]
+variable ep             equal c_reax[12]
+variable efi            equal c_reax[13]
+variable eqeq           equal c_reax[14]
+
+# ReaxFF-MD settings
+fix             1  all  qeq/reax  1  0.0  10.0  1e-6  reax/c
+
+# Time step
+thermo          1
+thermo_style    custom elapsed pe ke etotal v_eb v_ea v_et v_ew v_eco temp press lx ly lz vol
+dump            1 all custom 100 dump_emin id type q x y z
+dump_modify     1 sort id
+
+min_style 	cg
+minimize        1.0e-7 1.0e-7 5000 10000
+min_modify      dmax 0.005 line quadratic
+write_restart	restart.NoRelaxBox
+
+#             M  K  Z
+# Run MD      |  |  |
+#run           0000001
