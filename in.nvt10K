@@ -1,0 +1,56 @@
+#!/bin/bash
+units           real
+
+## Boundary condition
+dimension       3
+boundary        p p p
+
+# Create geometry from a structure file
+atom_style      charge
+read_restart	restart.NoRelaxBox
+
+# Apply ReaxFF potentials
+pair_style      reax/c lmp_control
+pair_coeff      * * ffield  C H O Al F
+
+# Boost  neibors (default = 2000)
+neighbor        2 bin
+neigh_modify    every 10 delay 0 check no
+
+compute                 reax all pair reax/c
+variable eb             equal c_reax[1]
+variable ea             equal c_reax[2]
+variable elp            equal c_reax[3]
+variable emol           equal c_reax[4]
+variable ev             equal c_reax[5]
+variable epen           equal c_reax[6]
+variable ecoa           equal c_reax[7]
+variable ehb            equal c_reax[8]
+variable et             equal c_reax[9]
+variable eco            equal c_reax[10]
+variable ew             equal c_reax[11]
+variable ep             equal c_reax[12]
+variable efi            equal c_reax[13]
+variable eqeq           equal c_reax[14]
+
+# ReaxFF-MD settings (NVT 300K)
+fix             3  all  nvt temp  10.0  10.0  100.0
+fix             1  all  qeq/reax  1  0.0  10.0  1e-6  reax/c
+fix             2  all  reax/c/species 1 1 400 species.reaxc element C H O Al F
+
+# Time step
+timestep        0.25
+
+thermo          100
+thermo_style   	custom step temp epair pe ke etotal lx ly lz vol
+
+dump            1 all custom 400 dump_md id type q x y z
+restart         20000  restart
+
+dump_modify     1 sort id
+
+#             M  K  Z
+# Run MD      |  |  |
+ run          0040000
+
+clear
